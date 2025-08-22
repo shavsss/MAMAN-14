@@ -12,22 +12,23 @@
 #include "data_structures.h"
 
 
-int process_file(const char *filename) {
+int process_file(const char *full_path, const char *base_name) {
     FILE *input_file, *output_file;
     char input_filename[MAX_LINE_LENGTH];
     char output_filename[MAX_LINE_LENGTH];
     char line[MAX_LINE_LENGTH];
     char macro_name[MAX_MACRO_NAME];
     int line_number = 0;
+    int c;
     MacroNode *macro_table = NULL;  /* Local macro table for this file */
     extern int error_flag;
     
-    /* Create input filename with .as extension */
-    strcpy(input_filename, filename);
+    /* Create input filename with .as extension - use full_path */
+    strcpy(input_filename, full_path);
     strcat(input_filename, AS_EXTENSION);
     
-    /* Create output filename with .am extension */
-    create_output_filename(filename, AM_EXTENSION, output_filename);
+    /* Create output filename with .am extension - use base_name */
+    create_output_filename(base_name, AM_EXTENSION, output_filename);
     
     /* Open input file */
     input_file = fopen(input_filename, "r");
@@ -49,11 +50,10 @@ int process_file(const char *filename) {
         line_number++;
         
         /* Check line length - must not exceed 80 characters */
-        if (strchr(line, '\n') == NULL && !feof(input_file)) {
-            print_error(input_filename, line_number, "Line is longer than 80 characters");
-            /* Read rest of line to start clean on next line */
-            int c;
-            while ((c = fgetc(input_file)) != '\n' && c != EOF);
+                 if (strchr(line, '\n') == NULL && !feof(input_file)) {
+             print_error(input_filename, line_number, "Line is longer than 80 characters");
+             /* Read rest of line to start clean on next line */
+             while ((c = fgetc(input_file)) != '\n' && c != EOF);
             continue; /* Skip processing the invalid line */
         }
         
@@ -226,6 +226,8 @@ static char* build_macro_content(FILE *input_file, int *line_number) {
     char *content = NULL;
     size_t content_size = 0;
     size_t content_capacity = 256;
+    size_t line_length;
+    int c;
     
     /* Allocate initial buffer */
     content = (char *)malloc(content_capacity);
@@ -239,7 +241,6 @@ static char* build_macro_content(FILE *input_file, int *line_number) {
         (*line_number)++;
         
         if (strchr(line, '\n') == NULL && !feof(input_file)) {
-            int c;
             while ((c = fgetc(input_file)) != '\n' && c != EOF);
             free(content);
             return NULL;
@@ -250,7 +251,7 @@ static char* build_macro_content(FILE *input_file, int *line_number) {
         }
         
         content_size = strlen(content);
-        size_t line_length = strlen(line);
+        line_length = strlen(line);
         
         if (content_size + line_length + 1 > content_capacity) {
             content_capacity *= 2;

@@ -13,6 +13,12 @@
 #include "data_structures.h"
 #include "first_pass.h"
 
+/* Forward declarations */
+int encode_immediate_operand(const char *operand, int line_number, const char *filename);
+unsigned int encode_register_operand(const char *operand, int is_source);
+int parse_matrix_operand(const char *operand, char *label, int *row, int *col);
+int count_operands_for_instruction(int opcode);
+
 
 static int process_line_second_pass(char *line, int line_number, const char *filename, SymbolNode *symbol_table, ExternalUsage **externals_list);
 static int process_entry_directive_parsed(ParsedLine *parsed, int line_number, const char *filename, SymbolNode *symbol_table);
@@ -24,16 +30,17 @@ static int add_external_usage(ExternalUsage **externals_list, const char *symbol
 static int determine_are_field(const char *operand, int addressing_mode, SymbolNode *symbol_table);
 
 
-int second_pass(const char *filename, SymbolNode *symbol_table, ExternalUsage **externals_list) {
+int second_pass(const char *full_path, const char *base_name, SymbolNode *symbol_table, ExternalUsage **externals_list) {
     FILE *input_file;
     char input_filename[MAX_LINE_LENGTH];
     char line[MAX_LINE_LENGTH];
     int line_number = 0;
+    int c;
     extern int error_flag;
     
     IC = IC_INITIAL_VALUE;
     
-    strcpy(input_filename, filename);
+    strcpy(input_filename, base_name);
     strcat(input_filename, ".am");
     
     input_file = fopen(input_filename, "r");
@@ -45,10 +52,9 @@ int second_pass(const char *filename, SymbolNode *symbol_table, ExternalUsage **
     while (fgets(line, sizeof(line), input_file) != NULL) {
         line_number++;
         
-        if (strchr(line, '\n') == NULL && !feof(input_file)) {
-            print_error(input_filename, line_number, "Line is longer than 80 characters");
-            int c;
-            while ((c = fgetc(input_file)) != '\n' && c != EOF);
+                 if (strchr(line, '\n') == NULL && !feof(input_file)) {
+             print_error(input_filename, line_number, "Line is longer than 80 characters");
+             while ((c = fgetc(input_file)) != '\n' && c != EOF);
             continue;
         }
         
@@ -62,9 +68,9 @@ int second_pass(const char *filename, SymbolNode *symbol_table, ExternalUsage **
     fclose(input_file);
     
     if (error_flag == 0) {
-        create_object_file(filename);
-        create_entries_file(filename, symbol_table);
-        create_externals_file(filename, *externals_list);
+        create_object_file(base_name);
+        create_entries_file(base_name, symbol_table);
+        create_externals_file(base_name, *externals_list);
     }
     return (error_flag == 0);
 }
@@ -399,14 +405,14 @@ static int add_external_usage(ExternalUsage **externals_list, const char *symbol
 }
 
 
-int create_object_file(const char *filename) {
+int create_object_file(const char *base_name) {
     FILE *output_file;
     char output_filename[MAX_LINE_LENGTH];
     char base4_address[6], base4_value[6];
     int i;
     int code_size = IC - IC_INITIAL_VALUE;
     
-    strcpy(output_filename, filename);
+    strcpy(output_filename, base_name);
     strcat(output_filename, ".ob");
     
     output_file = fopen(output_filename, "w");
@@ -435,7 +441,7 @@ int create_object_file(const char *filename) {
 }
 
 
-int create_entries_file(const char *filename, SymbolNode *symbol_table) {
+int create_entries_file(const char *base_name, SymbolNode *symbol_table) {
     FILE *output_file;
     char output_filename[MAX_LINE_LENGTH];
     char base4_address[6];
@@ -446,7 +452,7 @@ int create_entries_file(const char *filename, SymbolNode *symbol_table) {
         return 1;
     }
     
-    strcpy(output_filename, filename);
+    strcpy(output_filename, base_name);
     strcat(output_filename, ".ent");
     
     output_file = fopen(output_filename, "w");
@@ -475,7 +481,7 @@ int create_entries_file(const char *filename, SymbolNode *symbol_table) {
 }
 
 
-int create_externals_file(const char *filename, ExternalUsage *externals_list) {
+int create_externals_file(const char *base_name, ExternalUsage *externals_list) {
     FILE *output_file;
     char output_filename[MAX_LINE_LENGTH];
     char base4_address[6];
@@ -485,7 +491,7 @@ int create_externals_file(const char *filename, ExternalUsage *externals_list) {
         return 1;
     }
     
-    strcpy(output_filename, filename);
+    strcpy(output_filename, base_name);
     strcat(output_filename, ".ext");
     
     output_file = fopen(output_filename, "w");

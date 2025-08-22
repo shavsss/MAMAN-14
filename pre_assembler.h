@@ -18,6 +18,6 @@
 
 
 
-int process_file(const char *filename);
+int process_file(const char *full_path, const char *base_name);
 
 #endif /* PRE_ASSEMBLER_H */

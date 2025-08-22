@@ -11,18 +11,18 @@ typedef struct ExternalUsage {
 } ExternalUsage;
 
 
-int second_pass(const char *filename, SymbolNode *symbol_table, ExternalUsage **externals_list);
+int second_pass(const char *full_path, const char *base_name, SymbolNode *symbol_table, ExternalUsage **externals_list);
 
 
 
 
-int create_object_file(const char *filename);
+int create_object_file(const char *base_name);
 
 
-int create_entries_file(const char *filename, SymbolNode *symbol_table);
+int create_entries_file(const char *base_name, SymbolNode *symbol_table);
 
 
-int create_externals_file(const char *filename, ExternalUsage *externals_list);
+int create_externals_file(const char *base_name, ExternalUsage *externals_list);
 
 
 int has_entry_symbols(SymbolNode *symbol_table);

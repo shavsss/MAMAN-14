@@ -25,19 +25,20 @@ static int handle_instruction_first_pass(ParsedLine *parsed, int line_number, co
 static int finalize_first_pass(SymbolNode *symbol_table);
 
 
-int first_pass(const char *filename, SymbolNode **symbol_table) {
+int first_pass(const char *full_path, const char *base_name, SymbolNode **symbol_table) {
     FILE *input_file;
     char input_filename[MAX_LINE_LENGTH];
     char line[MAX_LINE_LENGTH];
     int line_number = 0;
+    int c;
     extern int error_flag;
     
     /* Reset counters and memory */
     reset_counters();
     reset_memory_images();
     
-    /* Create input filename with .am extension */
-    strcpy(input_filename, filename);
+    /* Create input filename with .am extension - use base_name since .am is already in same dir as executable */
+    strcpy(input_filename, base_name);
     strcat(input_filename, ".am");
     
     /* Open input file */
@@ -52,11 +53,10 @@ int first_pass(const char *filename, SymbolNode **symbol_table) {
         line_number++;
         
         /* Check line length - must not exceed 80 characters */
-        if (strchr(line, '\n') == NULL && !feof(input_file)) {
-            print_error(input_filename, line_number, "Line is longer than 80 characters");
-            /* Read rest of line to start clean on next line */
-            int c;
-            while ((c = fgetc(input_file)) != '\n' && c != EOF);
+                 if (strchr(line, '\n') == NULL && !feof(input_file)) {
+             print_error(input_filename, line_number, "Line is longer than 80 characters");
+             /* Read rest of line to start clean on next line */
+             while ((c = fgetc(input_file)) != '\n' && c != EOF);
             continue; /* Skip processing the invalid line */
         }
         
@@ -454,6 +454,7 @@ static int handle_directive_first_pass(ParsedLine *parsed, int line_number, cons
 static int process_instruction_parsed(ParsedLine *parsed, int line_number, const char *filename) {
     int opcode;
     int expected_operands;
+    int actual_operands;
     int src_mode = -1, dest_mode = -1;
     const char *src_operand = NULL, *dest_operand = NULL;
     
@@ -472,7 +473,7 @@ static int process_instruction_parsed(ParsedLine *parsed, int line_number, const
     /* Determine expected number of operands */
     expected_operands = count_operands_for_instruction(opcode);
     
-    int actual_operands = 0;
+    actual_operands = 0;
     if (parsed->operand1) actual_operands++;
     if (parsed->operand2) actual_operands++;
     
